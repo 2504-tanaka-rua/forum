@@ -1,0 +1,140 @@
+body {
+	background-color: #E0FFFF;
+}
+
+.header-contents {
+	margin-left: 20px;
+}
+
+.main-contents {
+	margin: 20px;
+	padding: 10px 10px 5px 10px;
+	background-color: #B4CCCC;
+	height: 100%;
+	width: 80%;
+}
+
+.footer-contents {
+	margin-left: 20px;
+}
+
+.tweet-box {
+    margin: 5px 0px;
+	width: 780px;
+	height: 56px;
+}
+
+button {
+	margin-bottom: 5px;
+}
+
+.delete-button{
+    display:inline-block;
+}
+
+.edit-button{
+    display:inline-block;
+}
+
+.profile {
+	margin-top: 10px;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	margin-left: 10px;
+	height: 100px;
+}
+
+.profile .profile-image {
+	float: left;
+}
+
+.profile .name h2 {
+	font-size: 30px;
+	font-weight: bold;
+	line-height: 36px;
+	margin: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+	margin-left: 0px;
+}
+
+a.profile .account {
+	font-size: 13px;
+	line-height: 22px;
+}
+
+.profile .description {
+	font-size: 13px;
+	line-height: 22px;
+}
+
+.form-area {
+	margin: 10px;
+	padding: 10px;
+	background-color: white;
+}
+
+.message-icon {
+	margin-bottom: 5px;
+	padding: 5px;
+	background-color: white;
+}
+
+.message-icon .icon {
+	margin-top: 1px;
+	margin-right: 1px;
+	margin-bottom: 1px;
+	margin-left: 1px;
+	float: left;
+}
+
+.message-icon .message {
+	margin-left: 60px;
+}
+
+.message-icon .account-name {
+	margin-top: 1px;
+	margin-bottom: 5px;
+}
+
+.message-icon .account-name .account {
+	font-weight: bold;
+}
+
+.commentDelete-button{
+    display:inline-block;
+}
+
+.commentEdit-button{
+    display:inline-block;
+}
+
+.account-name .name {
+	font-weight: lighter;
+	color: gray;
+	font: small-caption;
+}
+
+.message .date {
+	font-weight: lighter;
+	color: gray;
+	font: small-caption;
+}
+
+.copyright {
+	width: 250px;
+	margin: 0 auto;
+}
+
+label {
+	display: block;
+}
+
+.errorMessages {
+	margin-top: 10px;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	margin-left: 10px;
+	color: red;
+}

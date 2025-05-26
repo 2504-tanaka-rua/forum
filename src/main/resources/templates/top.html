@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <link th:href="@{/css/style.css}" rel="styleSheet">
+  <title>TOP</title>
+</head>
+<body>
+<div class="header-contents">
+  <h1>匿名掲示板</h1>
+</div>
+<div class="main-contents">
+  <div class="Calender">
+    <form th:action="@{./}"  th:method="get">
+      <input type="date" name="startDate" th:value="${startDate}"/>～
+      <input type="date" name="endDate" th:value="${endDate}"/>
+      <button type="submit">絞込</button>
+    </form>
+  </div>
+  <a href="/new">
+    <button class="new-button" type="button">新規投稿</button>
+  </a>
+  <div class="message-icon" th:each="content : ${contents}">
+    <div>
+      ID : <span th:text="${content.id}"/>
+    </div>
+    <div class="text">
+      投稿 : <span th:text="${content.content}"/>
+    </div>
+    <div class="delete-button">
+      <form th:action="@{/delete/{id}(id=${content.id})}" th:method="delete">
+        <input type="submit" value="削除">
+      </form>
+    </div>
+    <div class="edit-button">
+      <a th:href="@{/edit/{id}(id=${content.id})}">
+        <input type="submit" value="編集">
+      </a>
+    </div>
+    <div class="comment">
+      <form th:method="post" th:action="@{/comment/add/{reportId}(reportId=${content.id})}" th:object="${commentForm}">
+        <div class="form-area">
+          <label>コメント</label>
+          <textarea class="tweet-box" th:field="*{content}" size="20" maxlength="200" /></textarea><br/>
+          <input type="submit" value="コメント" />
+        </div>
+      </form>
+    </div>
+    <div class="comment-icon" th:each="comment : ${comments}">
+      <div th:if="${content.id} == ${comment.reportId}">
+        <div class="text">
+          コメント : <span th:text="${comment.content}"/>
+        </div>
+        <div class="commentDelete-button">
+          <form th:action="@{/comment/delete/{id}(id=${comment.id})}" th:method="delete">
+            <input type="submit" value="削除">
+          </form>
+        </div>
+        <div class="commentEdit-button">
+          <a th:href="@{/comment/edit/{id}(id=${comment.id})}">
+            <input type="submit" value="編集" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
