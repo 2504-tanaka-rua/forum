@@ -8,12 +8,14 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -23,7 +25,7 @@ import java.util.List;
 @Validated
 public class ForumController {
 
-    private HttpSession session;
+    //private HttpSession session;
 
     // コンストラクタを作成し、@Autowiredアノテーションを付与する
     @Autowired
@@ -41,10 +43,11 @@ public class ForumController {
      * 投稿内容表示処理
      */
     @GetMapping
-    public ModelAndView top(@ModelAttribute("startDate") String start, @ModelAttribute("endDate") String end) throws ParseException {
+    public ModelAndView top(@ModelAttribute("startDate") String start, @ModelAttribute("endDate") String end, Model model) throws ParseException {
 
         //sessionに格納しておいたエラーメッセージを取得
-        List<String> errorMessages = (List<String>) session.getAttribute("errorMessages");
+        //List<String> errorMessages = (List<String>) session.getAttribute("errorMessages");
+        List<String> errorMessages = (List<String>) model.getAttribute("errorMessages");
 
         ModelAndView mav = new ModelAndView();
         ReportForm reportForm = new ReportForm();
@@ -75,12 +78,13 @@ public class ForumController {
         //Viewでcfに入っているreportIdに一致する投稿でエラーメッセージを表示する
         if(!(errorMessages == null)){
             //入力されたcommentFormの内容をsessionから取り出す
-            CommentForm cf = (CommentForm) session.getAttribute("commentForm");
+            //CommentForm cf = (CommentForm) session.getAttribute("commentForm");
+            CommentForm cf = (CommentForm) model.getAttribute("commentForm");
             mav.addObject("errorMessages", errorMessages);
             mav.addObject("commentForm", cf);
         }
-        session.removeAttribute("errorMessages");
-        session.removeAttribute("commentForm");
+        //session.removeAttribute("errorMessages");
+        //session.removeAttribute("commentForm");
 
         return mav;
     }
@@ -124,19 +128,23 @@ public class ForumController {
      */
     @PostMapping("/comment/add/{reportId}")
     public ModelAndView addComment(@PathVariable("reportId") Integer reportId,
-                                   @ModelAttribute("commentForm") @Validated CommentForm commentForm, BindingResult result, HttpServletRequest request){
+                                   @ModelAttribute("commentForm") @Validated CommentForm commentForm, BindingResult result, HttpServletRequest request, RedirectAttributes redirectAttributes){
 
         if(result.hasErrors()){
-            HttpSession session = request.getSession();
+            //HttpSession session = request.getSession();
             List<String> errorMessages = new ArrayList<String>();
             //resultからデフォルトのエラーメッセージを取得
             //入っているerrorsの分だけ回してListに詰める
             for(ObjectError error : result.getAllErrors()){
                 errorMessages.add(error.getDefaultMessage());
             }
+
+            //リダイレクト先で一回だけ使いたいからフラッシュスコープに入れる
+            redirectAttributes.addFlashAttribute("errorMessages", errorMessages);
+            redirectAttributes.addFlashAttribute("commentForm", commentForm);
             //リダイレクト先でも使えるようにsession領域に格納
-            this.session.setAttribute("errorMessages", errorMessages);
-            this.session.setAttribute("commentForm", commentForm);
+            //this.session.setAttribute("errorMessages", errorMessages);
+            //this.session.setAttribute("commentForm", commentForm);
 
             ModelAndView mav = new ModelAndView();
             mav.setViewName("redirect:/");
