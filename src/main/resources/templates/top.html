@@ -43,6 +43,13 @@
           <label>コメント</label>
           <textarea class="tweet-box" th:field="*{content}" size="20" maxlength="200" /></textarea><br/>
           <input type="submit" value="コメント" />
+          <div th:if="${commentForm.reportId} == ${content.id}">
+            <th:block th:if="${errorMessages != null && !errorMessages.isEmpty()}">
+              <div th:each="errorMessages:${errorMessages}">
+                <span th:text="${errorMessages}" style="color:red"></span>
+              </div>
+            </th:block>
+          </div>
         </div>
       </form>
     </div>

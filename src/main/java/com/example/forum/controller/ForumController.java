@@ -5,18 +5,33 @@ import com.example.forum.controller.form.ReportForm;
 import com.example.forum.service.CommentService;
 import com.example.forum.service.ReportService;
 import io.micrometer.common.util.StringUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+import jakarta.servlet.http.HttpSession;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
+@Validated
 public class ForumController {
+
+    private HttpSession session;
+
+    // コンストラクタを作成し、@Autowiredアノテーションを付与する
+    @Autowired
+    public void SessionController(HttpSession session) {
+        // フィールドに代入する
+        this.session = session;
+    }
+
     @Autowired
     ReportService reportService;
     @Autowired
@@ -27,6 +42,10 @@ public class ForumController {
      */
     @GetMapping
     public ModelAndView top(@ModelAttribute("startDate") String start, @ModelAttribute("endDate") String end) throws ParseException {
+
+        //sessionに格納しておいたエラーメッセージを取得
+        List<String> errorMessages = (List<String>) session.getAttribute("errorMessages");
+
         ModelAndView mav = new ModelAndView();
         ReportForm reportForm = new ReportForm();
         CommentForm commentForm = new CommentForm();
@@ -46,11 +65,22 @@ public class ForumController {
         List<CommentForm> commentData = commentService.findAllComment();
         // コメントデータオブジェクトを保管
         mav.addObject("comments", commentData);
-
         // 画面遷移先を指定
         mav.setViewName("/top");
         // 空のフォームを渡しておく（コメント入力は画面遷移しないから）
         mav.addObject("commentForm", commentForm);
+
+        //エラーメッセージがnullじゃない＝コメントの入力が不適切だったということ
+        //nullではなかった場合、入力されたcommentFormの内容とエラーメッセージをModelAndViewに格納
+        //Viewでcfに入っているreportIdに一致する投稿でエラーメッセージを表示する
+        if(!(errorMessages == null)){
+            //入力されたcommentFormの内容をsessionから取り出す
+            CommentForm cf = (CommentForm) session.getAttribute("commentForm");
+            mav.addObject("errorMessages", errorMessages);
+            mav.addObject("commentForm", cf);
+        }
+        session.removeAttribute("errorMessages");
+        session.removeAttribute("commentForm");
 
         return mav;
     }
@@ -74,11 +104,19 @@ public class ForumController {
      * 新規投稿処理
      */
     @PostMapping("/add")
-    public ModelAndView addContent(@ModelAttribute("formModel") ReportForm reportForm){
-        // 投稿をテーブルに格納
-        reportService.saveReport(reportForm);
-        // rootへリダイレクト
-        return new ModelAndView("redirect:/");
+    public ModelAndView addContent(@ModelAttribute("formModel") @Validated ReportForm reportForm, BindingResult result){
+
+        if(result.hasErrors()){
+            ModelAndView mav = new ModelAndView();
+            mav.addObject("formModel", reportForm);
+            mav.setViewName("/new");
+            return mav;
+        }else {
+            // 投稿をテーブルに格納
+            reportService.saveReport(reportForm);
+            // rootへリダイレクト
+            return new ModelAndView("redirect:/");
+        }
     }
 
     /*
@@ -86,20 +124,38 @@ public class ForumController {
      */
     @PostMapping("/comment/add/{reportId}")
     public ModelAndView addComment(@PathVariable("reportId") Integer reportId,
-                                   @ModelAttribute("commentForm") CommentForm commentForm){
+                                   @ModelAttribute("commentForm") @Validated CommentForm commentForm, BindingResult result, HttpServletRequest request){
 
-        ReportForm reportForm = new ReportForm();
-        // コメントした投稿のcontent.idをhtmlから受け取り、フォームにセット
-        // contentはhtmlですでに入力内容が詰められてる（idは後から自動で付与される）
-        commentForm.setReportId(reportId);
-        commentService.saveComment(commentForm);
-        //reportIdでコメントを追加した投稿の情報を取得
-        reportForm.setId(reportId);
-        ReportForm updateData = reportService.editReport(reportId);
-        // 取得した投稿のデータを更新しに行く(実際updatedDateだけが更新される)
-        reportService.saveReport(updateData);
+        if(result.hasErrors()){
+            HttpSession session = request.getSession();
+            List<String> errorMessages = new ArrayList<String>();
+            //resultからデフォルトのエラーメッセージを取得
+            //入っているerrorsの分だけ回してListに詰める
+            for(ObjectError error : result.getAllErrors()){
+                errorMessages.add(error.getDefaultMessage());
+            }
+            //リダイレクト先でも使えるようにsession領域に格納
+            this.session.setAttribute("errorMessages", errorMessages);
+            this.session.setAttribute("commentForm", commentForm);
 
-        return new ModelAndView("redirect:/");
+            ModelAndView mav = new ModelAndView();
+            mav.setViewName("redirect:/");
+            return mav;
+        }else {
+            // コメントした投稿のcontent.idをhtmlから受け取り、フォームにセット
+            // contentはhtmlですでに入力内容が詰められてる（idは後から自動で付与される）
+            commentForm.setReportId(reportId);
+            commentService.saveComment(commentForm);
+            //reportIdでコメントを追加した投稿の情報を取得
+            //コメントの追加とともに、コメントした投稿の更新日時も更新したい
+            ReportForm reportForm = new ReportForm();
+            reportForm.setId(reportId);
+            ReportForm updateData = reportService.editReport(reportId);
+            // 取得した投稿のデータを更新しに行く(実際updatedDateだけが更新される)
+            reportService.saveReport(updateData);
+
+            return new ModelAndView("redirect:/");
+        }
     }
 
     /*
@@ -145,13 +201,19 @@ public class ForumController {
      */
     @PutMapping("/update/{id}")
     public ModelAndView editContent(@PathVariable("id") Integer id,
-                                    @ModelAttribute("formModel") ReportForm report){
+                                    @ModelAttribute("formModel") @Validated ReportForm report, BindingResult result){
 
-        report.setId(id);
-        reportService.saveReport(report);
+        if(result.hasErrors()){
+            ModelAndView mav = new ModelAndView();
+            mav.addObject("formModel", report);
+            mav.setViewName("/edit");
+            return mav;
+        }else {
+            report.setId(id);
+            reportService.saveReport(report);
 
-        return new ModelAndView("redirect:/");
-
+            return new ModelAndView("redirect:/");
+        }
     }
 
     /*
@@ -159,13 +221,20 @@ public class ForumController {
      */
     @PutMapping("/comment/update/{id}")
     public ModelAndView editComment(@PathVariable("id") Integer id,
-                                    @ModelAttribute("commentForm") CommentForm comment){
+                                    @ModelAttribute("commentForm") @Validated CommentForm comment, BindingResult result){
 
-        comment.setId(id);
-        // setしたidに紐づくコメントを更新しに行く
-        commentService.saveComment(comment);
+        if(result.hasErrors()){
+            ModelAndView mav = new ModelAndView();
+            mav.addObject("commentForm", comment);
+            mav.setViewName("/editComment");
+            return mav;
+        }else {
+            comment.setId(id);
+            // setしたidに紐づくコメントを更新しに行く
+            commentService.saveComment(comment);
 
-        return new ModelAndView("redirect:/");
+            return new ModelAndView("redirect:/");
+        }
     }
 
 

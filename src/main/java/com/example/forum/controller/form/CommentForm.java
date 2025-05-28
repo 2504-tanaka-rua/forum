@@ -1,9 +1,12 @@
 package com.example.forum.controller.form;
 
+import jakarta.validation.constraints.NotBlank;
+
 import java.util.Date;
 
 public class CommentForm {
     private int id;
+    @NotBlank(message = "コメントを入力してください")
     private String content;
     private int reportId;
     private Date createdDate;

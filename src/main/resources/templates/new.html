@@ -15,6 +15,7 @@
       <label>投稿内容</label>
       <textarea class="tweet-box" th:field="*{content}" size="20" maxlength="200" /></textarea><br/>
       <input type="submit" value="投稿" />
+      <span th:errors="*{content}" style="color:red"></span>
     </div>
   </form>
 </div>
